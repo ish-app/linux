@@ -608,6 +608,7 @@ void inet_unhash(struct sock *sk)
 	if (ilb) {
 		inet_unhash2(hashinfo, sk);
 		ilb->count--;
+		ip_dev_notify_unlisten(sk);
 	}
 	__sk_nulls_del_node_init_rcu(sk);
 	sock_prot_inuse_add(sock_net(sk), sk->sk_prot, -1);

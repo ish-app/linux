@@ -94,7 +94,15 @@ static void __user_thread(void)
 	struct pt_regs *regs = current_pt_regs();
 
 	for (;;) {
-		int interrupt = emu_run_to_interrupt(&current->thread.emu, current_pt_regs());
+		int interrupt;
+		ktime_t start;
+		unsigned long run_time_us;
+
+		start = ktime_get();
+		interrupt = emu_run_to_interrupt(&current->thread.emu, current_pt_regs());
+		run_time_us = ktime_to_us(ktime_sub(ktime_get(), start));
+		if (run_time_us > 50000)
+			printk(KERN_WARNING "emulator ran for %luus!", run_time_us);
 		regs->trap_nr = interrupt;
 		regs->orig_ax = regs->ax;
 

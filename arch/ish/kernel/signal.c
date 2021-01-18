@@ -59,7 +59,11 @@ void do_signal(struct pt_regs *regs)
 {
 	struct ksignal ksig;
 
+	int pending = test_thread_flag(TIF_SIGPENDING);
+
 	if (get_signal(&ksig)) {
+		if (!pending)
+			printk("got a signal and yet nothing is pending!");
 		handle_signal(&ksig, regs);
 		return;
 	}

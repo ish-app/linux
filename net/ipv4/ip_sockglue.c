@@ -1831,3 +1831,61 @@ int compat_ip_getsockopt(struct sock *sk, int level, int optname,
 }
 EXPORT_SYMBOL(compat_ip_getsockopt);
 #endif
+
+int ip_dev_notify_listen(struct sock *sk, unsigned short snum)
+{
+	struct inet_sock *inet = inet_sk(sk);
+	struct net_device *dev, *fail_dev = NULL;
+	//printk("%p increment %d %pI4:%d\n", sk, sk->sk_protocol, &inet->inet_rcv_saddr, snum);
+	rcu_read_lock();
+	for_each_netdev_rcu(sock_net(sk), dev) {
+		if (!dev->netdev_ops->ndo_ip_listen)
+			continue;
+		if (dev->netdev_ops->ndo_ip_listen(dev, sk->sk_protocol, inet->inet_rcv_saddr, snum)) {
+			fail_dev = dev;
+			break;
+		}
+	}
+	if (fail_dev) {
+		for_each_netdev_rcu(sock_net(sk), dev) {
+			if (dev == fail_dev)
+				break;
+			if (dev->netdev_ops->ndo_ip_unlisten)
+				dev->netdev_ops->ndo_ip_unlisten(dev, sk->sk_protocol, inet->inet_rcv_saddr, snum);
+		}
+	}
+	rcu_read_unlock();
+	if (fail_dev)
+		return 1;
+	inet->inet_last_saddr = inet->inet_rcv_saddr;
+	return 0;
+}
+
+void ip_dev_notify_unlisten(struct sock *sk)
+{
+	struct inet_sock *inet = inet_sk(sk);
+	struct net_device *dev;
+	//printk("%p decrement %d %pI4:%d\n", sk, sk->sk_protocol, &inet->inet_last_saddr, inet->inet_num);
+	rcu_read_lock();
+	for_each_netdev_rcu(sock_net(sk), dev) {
+		if (dev->netdev_ops->ndo_ip_unlisten)
+			dev->netdev_ops->ndo_ip_unlisten(dev, sk->sk_protocol, inet->inet_last_saddr, inet->inet_num);
+	}
+	rcu_read_unlock();
+	inet->inet_last_saddr = INADDR_NONE;
+}
+
+void ip_dev_notify_relisten(struct sock *sk)
+{
+	struct inet_sock *inet = inet_sk(sk);
+	struct net_device *dev;
+	//printk("%p transmute %d %pI4:%d -> %pI4:%d\n", sk, sk->sk_protocol, &inet->inet_last_saddr, inet->inet_num, &inet->inet_rcv_saddr, inet->inet_num);
+	rcu_read_lock();
+	for_each_netdev_rcu(sock_net(sk), dev) {
+		if (dev->netdev_ops->ndo_ip_listen_newaddr)
+			dev->netdev_ops->ndo_ip_listen_newaddr(dev, sk->sk_protocol, inet->inet_last_saddr, inet->inet_rcv_saddr, inet->inet_num);
+	}
+	rcu_read_unlock();
+	inet->inet_last_saddr = inet->inet_rcv_saddr;
+}
+

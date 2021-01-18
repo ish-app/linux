@@ -152,9 +152,14 @@ ssize_t host_sendmsg(int fd, struct user_iovec *iov, size_t iov_len, void *name,
 	return len;
 }
 
-ssize_t host_recvmsg(int fd, struct user_iovec *iov, size_t iov_len, void *name, int *name_len_out, int *flags_out, int flags)
+ssize_t host_recvmsg(int fd, struct user_iovec *iov, size_t iov_len, void *name, int *name_len_out, int *flags_out, int kflags)
 {
-	assert(flags == 0);
+	int flags = 0;
+	if (kflags & 0x40)
+		flags |= MSG_DONTWAIT;
+	if (kflags & 2)
+		flags |= MSG_PEEK;
+	assert((kflags&~0x42) == 0);
 	struct msghdr msg = {
 		.msg_iov = (struct iovec *) iov,
 		.msg_iovlen = iov_len,
@@ -164,10 +169,13 @@ ssize_t host_recvmsg(int fd, struct user_iovec *iov, size_t iov_len, void *name,
 	ssize_t len = recvmsg(fd, &msg, flags);
 	if (len < 0)
 		return errno_map();
-	sockaddr_to_kernel(msg.msg_name, msg.msg_namelen);
-	*name_len_out = msg.msg_namelen;
-	assert(msg.msg_flags == 0); /* TODO */
-	*flags_out = msg.msg_flags;
+	if (name) {
+		sockaddr_to_kernel(msg.msg_name, msg.msg_namelen);
+		*name_len_out = msg.msg_namelen;
+	}
+	/*assert(msg.msg_flags == 0); /* TODO */
+	if (flags_out)
+		*flags_out = msg.msg_flags;
 	return len;
 }
 

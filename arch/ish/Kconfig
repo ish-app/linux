@@ -65,3 +65,8 @@ config HOST_INET
 	bool "Host-based AF_INET"
 	default y
 	depends on NET && !INET
+
+config GOLP
+	bool "Golp interface"
+	default y
+	depends on INET

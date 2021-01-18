@@ -1485,6 +1485,10 @@ struct net_device_ops {
 	struct devlink_port *	(*ndo_get_devlink_port)(struct net_device *dev);
 	int			(*ndo_tunnel_ctl)(struct net_device *dev,
 						  struct ip_tunnel_parm *p, int cmd);
+
+	int			(*ndo_ip_listen)(struct net_device *dev, int protocol, __be32 addr, unsigned short port);
+	void			(*ndo_ip_unlisten)(struct net_device *dev, int protocol, __be32 addr, unsigned short port);
+	void			(*ndo_ip_listen_newaddr)(struct net_device *dev, int protocol, __be32 old_addr, __be32 new_addr, unsigned short port);
 };
 
 /**

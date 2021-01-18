@@ -3,7 +3,6 @@ generic-y += cmpxchg.h
 generic-y += extable.h
 generic-y += irqflags.h
 generic-y += local64.h
-generic-y += string.h
 generic-y += user.h
 
 include $(srctree)/arch/ish/$(ABI_ARCH)/include/asm/Kbuild

@@ -771,4 +771,8 @@ void ip_sock_set_pktinfo(struct sock *sk);
 void ip_sock_set_recverr(struct sock *sk);
 void ip_sock_set_tos(struct sock *sk, int val);
 
+__must_check int ip_dev_notify_listen(struct sock *sk, unsigned short snum);
+void ip_dev_notify_unlisten(struct sock *sk);
+void ip_dev_notify_relisten(struct sock *sk);
+
 #endif	/* _IP_H */

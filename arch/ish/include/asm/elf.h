@@ -37,6 +37,33 @@ typedef elf_greg_t elf_fpregset_t[ELF_NFPREG];
 } while (0)
 
 /*
+ * regs is struct pt_regs, pr_reg is elf_gregset_t (which is
+ * now struct_user_regs, they are different)
+ */
+
+#define ELF_CORE_COPY_REGS(pr_reg, regs)	\
+do {						\
+	pr_reg[0] = regs->bx;			\
+	pr_reg[1] = regs->cx;			\
+	pr_reg[2] = regs->dx;			\
+	pr_reg[3] = regs->si;			\
+	pr_reg[4] = regs->di;			\
+	pr_reg[5] = regs->bp;			\
+	pr_reg[6] = regs->ax;			\
+	pr_reg[7] = 0; /* ds */ 		\
+	pr_reg[8] = 0; /* es */ 		\
+	pr_reg[9] = 0; /* fs */ 		\
+	pr_reg[11] = regs->orig_ax;		\
+	pr_reg[12] = regs->ip;			\
+	pr_reg[13] = 0; /* ss */		\
+	pr_reg[14] = regs->flags;		\
+	pr_reg[15] = regs->sp;			\
+	pr_reg[16] = 0; /* cs */		\
+} while (0);
+
+#define ELF_CORE_COPY_FPREGS(t, fpu) 0 /* TODO */
+
+/*
  * These are used to set parameters in the core dumps.
  */
 #define ELF_CLASS	ELFCLASS32

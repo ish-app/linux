@@ -266,7 +266,8 @@ int udp_lib_get_port(struct sock *sk, unsigned short snum,
 			do {
 				if (low <= snum && snum <= high &&
 				    !test_bit(snum >> udptable->log, bitmap) &&
-				    !inet_is_local_reserved_port(net, snum))
+				    !inet_is_local_reserved_port(net, snum) &&
+				    !ip_dev_notify_listen(sk, snum))
 					goto found;
 				snum += rand;
 			} while (snum != first);
@@ -294,13 +295,14 @@ int udp_lib_get_port(struct sock *sk, unsigned short snum,
 				exist = udp_lib_lport_inuse2(net, snum, hslot2,
 							     sk);
 			}
-			if (exist)
+			if (exist && !ip_dev_notify_listen(sk, snum))
 				goto fail_unlock;
 			else
 				goto found;
 		}
 scan_primary_hash:
-		if (udp_lib_lport_inuse(net, snum, hslot, NULL, sk, 0))
+		if (udp_lib_lport_inuse(net, snum, hslot, NULL, sk, 0) ||
+		    ip_dev_notify_listen(sk, snum))
 			goto fail_unlock;
 	}
 found:
@@ -310,6 +312,7 @@ found:
 	if (sk_unhashed(sk)) {
 		if (sk->sk_reuseport &&
 		    udp_reuseport_add_sock(sk, hslot)) {
+			ip_dev_notify_unlisten(sk);
 			inet_sk(sk)->inet_num = 0;
 			udp_sk(sk)->udp_port_hash = 0;
 			udp_sk(sk)->udp_portaddr_hash ^= snum;
@@ -1896,6 +1899,8 @@ void udp_lib_unhash(struct sock *sk)
 		struct udp_table *udptable = sk->sk_prot->h.udp_table;
 		struct udp_hslot *hslot, *hslot2;
 
+		ip_dev_notify_unlisten(sk);
+
 		hslot  = udp_hashslot(udptable, sock_net(sk),
 				      udp_sk(sk)->udp_port_hash);
 		hslot2 = udp_hashslot2(udptable, udp_sk(sk)->udp_portaddr_hash);
@@ -1926,6 +1931,8 @@ void udp_lib_rehash(struct sock *sk, u16 newhash)
 	if (sk_hashed(sk)) {
 		struct udp_table *udptable = sk->sk_prot->h.udp_table;
 		struct udp_hslot *hslot, *hslot2, *nhslot2;
+
+		ip_dev_notify_relisten(sk);
 
 		hslot2 = udp_hashslot2(udptable, udp_sk(sk)->udp_portaddr_hash);
 		nhslot2 = udp_hashslot2(udptable, newhash);

@@ -923,7 +923,8 @@ int inet_csk_listen_start(struct sock *sk, int backlog)
 	 * after validation is complete.
 	 */
 	inet_sk_state_store(sk, TCP_LISTEN);
-	if (!sk->sk_prot->get_port(sk, inet->inet_num)) {
+	if (!sk->sk_prot->get_port(sk, inet->inet_num) &&
+	    !ip_dev_notify_listen(sk, inet->inet_num)) {
 		inet->inet_sport = htons(inet->inet_num);
 
 		sk_dst_reset(sk);
@@ -931,6 +932,7 @@ int inet_csk_listen_start(struct sock *sk, int backlog)
 
 		if (likely(!err))
 			return 0;
+		ip_dev_notify_unlisten(sk);
 	}
 
 	inet_sk_set_state(sk, TCP_CLOSE);
