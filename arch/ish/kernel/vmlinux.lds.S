@@ -17,6 +17,35 @@ SECTIONS
 	PERCPU_SECTION(L1_CACHE_BYTES)
 	__init_end = .;
 
+	.hash           : { *(.hash) }
+	.gnu.hash       : { *(.gnu.hash) }
+	.dynsym         : { *(.dynsym) }
+	.dynstr         : { *(.dynstr) }
+	.gnu.version    : { *(.gnu.version) }
+	.gnu.version_d  : { *(.gnu.version_d) }
+	.gnu.version_r  : { *(.gnu.version_r) }
+	.rel.init       : { *(.rel.init) }
+	.rela.init      : { *(.rela.init) }
+	.rel.text       : { *(.rel.text .rel.text.* .rel.gnu.linkonce.t.*) }
+	.rela.text      : { *(.rela.text .rela.text.* .rela.gnu.linkonce.t.*) }
+	.rel.fini       : { *(.rel.fini) }
+	.rela.fini      : { *(.rela.fini) }
+	.rel.rodata     : { *(.rel.rodata .rel.rodata.* .rel.gnu.linkonce.r.*) }
+	.rela.rodata    : { *(.rela.rodata .rela.rodata.* .rela.gnu.linkonce.r.*) }
+	.rel.data       : { *(.rel.data .rel.data.* .rel.gnu.linkonce.d.*) }
+	.rela.data      : { *(.rela.data .rela.data.* .rela.gnu.linkonce.d.*) }
+	.rel.tdata      : { *(.rel.tdata .rel.tdata.* .rel.gnu.linkonce.td.*) }
+	.rela.tdata     : { *(.rela.tdata .rela.tdata.* .rela.gnu.linkonce.td.*) }
+	.rel.tbss       : { *(.rel.tbss .rel.tbss.* .rel.gnu.linkonce.tb.*) }
+	.rela.tbss      : { *(.rela.tbss .rela.tbss.* .rela.gnu.linkonce.tb.*) }
+	.rel.ctors      : { *(.rel.ctors) }
+	.rela.ctors     : { *(.rela.ctors) }
+	.rel.dtors      : { *(.rel.dtors) }
+	.rela.dtors     : { *(.rela.dtors) }
+	.rel.got        : { *(.rel.got) }
+	.rela.got       : { *(.rela.got) }
+	.rel.bss        : { *(.rel.bss .rel.bss.* .rel.gnu.linkonce.b.*) }
+	.rela.bss       : { *(.rela.bss .rela.bss.* .rela.gnu.linkonce.b.*) }
 	.rel.plt : {
 		*(.rel.plt)
 		PROVIDE_HIDDEN(__rel_iplt_start = .);
