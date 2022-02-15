@@ -5,6 +5,12 @@
 
 jiffies = jiffies_64;
 
+VERSION {
+  {
+    local: *;
+  };
+}
+
 SECTIONS
 {
 	. = SIZEOF_HEADERS;
