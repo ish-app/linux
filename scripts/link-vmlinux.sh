@@ -74,7 +74,7 @@ kbuild_objects()
 
 	objs="$1"
 	libs="$2"
-	wl="$2" # either empty or -Wl,
+	wl="$3" # either empty or -Wl,
 
 	if [ "$(uname)" != "Darwin" ]; then
 		if [ "$wl" != "#" ]; then
