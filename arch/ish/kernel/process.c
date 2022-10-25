@@ -41,6 +41,9 @@ static void show_signal(struct task_struct *task, const char *desc, unsigned lon
 	}
 }
 
+static bool log_syscalls;
+core_param(log_syscalls, log_syscalls, bool, 0644);
+
 static void __user_thread(void)
 {
 	struct pt_regs *regs = current_pt_regs();
@@ -86,6 +89,12 @@ static void __user_thread(void)
 				goto signal;
 			regs->ax = syscall(regs->bx, regs->cx, regs->dx,
 					   regs->si, regs->di, regs->bp);
+			if (log_syscalls) {
+				printk("%s[%d] syscall %d(%#x, %#x, %#x) -> %d\n",
+				       current->comm, current->pid,
+				       regs->orig_ax, regs->bx, regs->cx,
+				       regs->dx, regs->ax);
+			}
 			trace_syscall_exit(regs);
 		} else if (interrupt == 0x20) {
 			/* timer */
