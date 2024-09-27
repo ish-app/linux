@@ -78,7 +78,7 @@ static void __user_thread(void)
 						 unsigned long, unsigned long,
 						 unsigned long, unsigned long);
 
-			if (regs->orig_ax > NR_syscalls) {
+			if (regs->orig_ax >= NR_syscalls) {
 				show_signal(current, "syscall out of range", regs->orig_ax);
 				force_sig_fault(SIGSYS, SI_KERNEL, 0);
 				goto signal;
