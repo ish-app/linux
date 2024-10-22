@@ -43,10 +43,10 @@ extern const u8 kallsyms_names[] __weak;
  * has one (eg: FRV).
  */
 extern const unsigned int kallsyms_num_syms
-__weak __section_elf_macho(.rodata, DATA,const);
+__weak __section_elf_macho(".rodata", DATA,const);
 
 extern const unsigned long kallsyms_relative_base
-__weak __section_elf_macho(.rodata, DATA,const);
+__weak __section_elf_macho(".rodata", DATA,const);
 
 extern const char kallsyms_token_table[] __weak;
 extern const u16 kallsyms_token_index[] __weak;
@@ -58,9 +58,9 @@ const unsigned long kallsyms_addresses[0] __weak;
 const int kallsyms_offsets[0] __weak;
 const u8 kallsyms_names[0] __weak;
 const unsigned int kallsyms_num_syms
-__weak __section_elf_macho(.rodata, DATA,const);
+__weak __section_elf_macho(".rodata", DATA,const);
 const unsigned long kallsyms_relative_base
-__weak __section_elf_macho(.rodata, DATA,const);
+__weak __section_elf_macho(".rodata", DATA,const);
 const char kallsyms_token_table[0] __weak;
 const u16 kallsyms_token_index[0] __weak;
 const unsigned int kallsyms_markers[0] __weak;

@@ -4,6 +4,7 @@
 #include <net/tcp.h>
 #include <net/secure_seq.h>
 #include "golp.h"
+#include <linux/sched/debug.h>
 
 /* TODO: send periodic keepalives to make sure stale sockets get cleaned up */
 /* One way to reproduce a problem that keepalives would solve is to drop the
@@ -111,6 +112,7 @@ static struct sk_buff *golp_tcp_make_recv(struct golp_socket *sock, int size,
 	tcp->ack = 1;
 	tcp->ack_seq = htonl(sock->local_next);
 	tcp->window = min_t(u32, get_send_window(sock), U16_MAX);
+	/* printk("%s[%d] %s %d  ack_seq=%u\n", current->comm, current->pid, __FUNCTION__, __LINE__, ntohl(tcp->ack_seq)); */
 
 	return skb;
 }
@@ -244,6 +246,11 @@ static void golp_tcp_tx_conn(struct golp_socket *sock, struct sk_buff *skb,
 	/* move data along */
 	if (data.len > 0) {
 		ssize_t send_len = host_sendmsg(sock->fd, &data, 1, NULL, 0, 0);
+		if (send_len == -EAGAIN) {
+			printk("eagain, give it a second\n");
+			mdelay(1000);
+			send_len = host_sendmsg(sock->fd, &data, 1, NULL, 0, 0);
+		}
 		if (send_len == -EAGAIN)
 			send_len = 0;
 		if (send_len < 0) {
@@ -284,6 +291,7 @@ static void golp_tcp_tx_noconn(struct sk_buff *skb, struct net_device *dev)
 	struct tcphdr *tcp = tcp_hdr(skb);
 	struct sockaddr_in sin = { .sin_family = AF_INET };
 	int err;
+	unsigned long flags;
 
 	/* 3.9 p65: If the state is LISTEN then: */
 
@@ -344,16 +352,24 @@ static void golp_tcp_tx_noconn(struct sk_buff *skb, struct net_device *dev)
 	sock->remote_syn = FL_OFF;
 	sock->local_fin = sock->remote_fin = FL_OFF;
 
+	/* printk("%s %d  local_next=%u\n", __FUNCTION__, __LINE__, sock->local_next); */
+	/* Must lock the socket before calling fd_listen, since fd_listen
+	 * publishes the socket for other threads to access on irq */
+	spin_lock_irqsave(&sock->lock, flags);
+
 	/* TODO: turn off POLLOUT once the connect() finishes */
 	err = fd_listen(sock->fd, POLLIN | POLLOUT | POLLHUP | EPOLLET,
 			&sock->listener);
 	if (err < 0) {
+		spin_unlock_irqrestore(&sock->lock, flags);
 		golp_socket_put(sock);
 		return golp_drop_tx(dev, skb,
 				    "failed to listen on connecting socket");
 	}
+
 	err = fd_set_nonblock(sock->fd);
 	if (err < 0) {
+		spin_unlock_irqrestore(&sock->lock, flags);
 		golp_socket_put(sock);
 		return golp_drop_tx(
 			dev, skb,
@@ -364,12 +380,15 @@ static void golp_tcp_tx_noconn(struct sk_buff *skb, struct net_device *dev)
 	sin.sin_port = tcp->dest;
 	err = host_connect(sock->fd, &sin, sizeof(sin));
 	if (err < 0 && err != -EINPROGRESS) {
+		spin_unlock_irqrestore(&sock->lock, flags);
 		golp_socket_put(sock);
 		/* TODO: should this be a reset? */
 		return golp_drop_tx(dev, skb, "failed to initiate connection");
 	}
+
 	/* A connection attempt counts for 1 sequence unit */
 	sock->local_next++;
+	spin_unlock_irqrestore(&sock->lock, flags);
 
 	__tcp_socket_insert(dev, sock);
 }
@@ -380,6 +399,9 @@ void golp_tcp4_tx(struct sk_buff *skb, struct net_device *dev)
 	struct golp_socket *sock;
 	struct iphdr *ip = ip_hdr(skb);
 	struct tcphdr *tcp = tcp_hdr(skb);
+
+	if (tcp->rst)
+		printk("golp tcp tx reset?\n");
 
 	if (ip_transport_len(skb) < sizeof(*tcp) ||
 	    ip_transport_len(skb) < tcp_hdrlen(skb))

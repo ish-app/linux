@@ -16,3 +16,5 @@ obj-$(CONFIG_SMP) += smp.o
 obj-$(CONFIG_ARCH_KALLSYMS) += kallsyms.o kallsyms_user.o
 
 include arch/um/scripts/Makefile.rules
+
+obj-y += stubs.o
