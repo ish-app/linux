@@ -219,7 +219,8 @@ static __init int stdio_init(void)
 
 	for (i = 0; envp_init[i]; i++) {
 		if (strncmp(TERM_ENV, envp_init[i], strlen(TERM_ENV)) == 0) {
-			strcat(TERM_ENV, host_getenv("TERM"));
+			const char *term_env = host_getenv("TERM");
+			strcat(TERM_ENV, term_env ? term_env : "linux");
 			envp_init[i] = TERM_ENV;
 			break;
 		}
